@@ -5,10 +5,17 @@ require("dotenv").config();
 const User = require("./models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Post = require("./models/Post");
+const multer = require("multer");
+const uploadMiddleware = multer({ dest: "upload/" });
+const fs = require("fs");
+const cookieParser = require("cookie-parser");
 
 const app = express();
 app.use(cors({ credentials: true, origin: "http://localhost:5173" }));
 app.use(express.json());
+app.use(cookieParser());
+app.use("/upload", express.static(__dirname + "/upload"));
 
 //database Connect
 
@@ -42,11 +49,11 @@ app.post("/login", async (req, res) => {
   const isMatchedPassword = bcrypt.compareSync(password, userDoc.password);
   if (isMatchedPassword) {
     //can login
-    jwt.sign({ username, id: userDoc }, secret, {}, (err, token) => {
+    jwt.sign({ username, id: userDoc._id }, secret, {}, (err, token) => {
       if (err) throw err;
       //save data in cookie
       res.cookie("token", token).json({
-        id: userDoc.id,
+        id: userDoc._id,
         username,
       });
     });
@@ -55,10 +62,106 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.get("/post", async (req, res) => {
+  res.json(
+    await Post.find()
+      .populate("author", ["username"])
+      .sort({ createAt: -1 })
+      .limit(20)
+  );
+});
+
 //User logout
 app.post("/logout", (req, res) => {
-  res.cookie("token", "").json("ok")
-})
+  res.cookie("token", "").json("ok");
+});
+
+//Creat Post
+app.post("/post", uploadMiddleware.single("file"), async (req, res) => {
+  const { originalname, path } = req.file;
+  const parts = originalname.split(".");
+  const ext = parts[parts.length - 1];
+  const newPath = path + "." + ext;
+  fs.renameSync(path, newPath);
+
+  const { token } = req.cookies;
+  jwt.verify(token, secret, async (err, info) => {
+    if (err) throw err;
+    const { title, summary, content } = req.body;
+    const postDoc = await Post.create({
+      title,
+      summary,
+      content,
+      cover: newPath,
+      author: info.id,
+    });
+    res.json(postDoc);
+  });
+});
+
+app.get("/post/:id", async (req, res) => {
+  const { id } = req.params;
+  const postDoc = await Post.findById(id).populate("author", ["username"]);
+  res.json(postDoc);
+});
+
+app.delete("/post/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Delete post by ID
+    const deletedPost = await Post.findByIdAndDelete(id);
+
+    if (deletedPost) {
+      // If deletion is successful
+      res.json({ message: "Post deleted successfully", deletedPost });
+    } else {
+      // If the specified ID is not found
+      res.status(404).json({ message: "Post not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting post:", error.message);
+    res.status(500).json("Internal Server Error");
+  }
+});
+
+app.put("/post/:id", uploadMiddleware.single("file"), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { title, summary, content } = req.body;
+    let updateData = { title, summary, content };
+
+    if (req.file) {
+      const { originalname, path } = req.file;
+      const parts = originalname.split(".");
+      const ext = parts[parts.length - 1];
+      const newPath = path + "." + ext;
+
+      await fs.promises.rename(path, newPath);
+      updateData = { ...updateData, cover: newPath };
+    }
+
+    const existingPost = await Post.findById(id);
+    const existingCoverPath = existingPost ? existingPost.cover : '';
+
+    // เช็คว่าถ้าไม่มีรูปใหม่ถูกส่งมา ให้ใช้รูปเดิมจากฐานข้อมูล
+    const cover = req.file ? updateData.cover : existingCoverPath;
+
+    const updatedPost = await Post.findByIdAndUpdate(id, { ...updateData, cover }, {
+      new: true,
+    });
+
+    if (updatedPost) {
+      res.json(updatedPost);
+    } else {
+      res.status(404).json({ message: "Post not found" });
+    }
+  } catch (error) {
+    console.error("Error updating post:", error.message);
+    res.status(500).json("Internal Server Error");
+  }
+});
+// app.use("/uploads", express.static(__dirname + "/uploads"));
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {

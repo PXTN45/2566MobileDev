@@ -167,3 +167,33 @@ button {
         transform: scale(1.2);
       }
 }
+
+div.edit-row{
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+div.post-page a.edit-btn{
+    background-color: #333;
+    display: inline;
+    align-items: center;
+    gap: 5px;
+    color: #fff;
+    padding: 15px 30px;
+    border-radius: 5px;
+    text-decoration: none;
+}
+div.post-page a.delete-btn{
+    margin-left: 10px;
+    background-color: #dc2121;
+    display: inline;
+    align-items: center;
+    gap: 5px;
+    color: #fff;
+    padding: 15px 30px;
+    border-radius: 5px;
+    text-decoration: none;
+}
+a svg {
+    height: 20px;
+}

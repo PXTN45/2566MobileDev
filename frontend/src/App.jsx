@@ -1,4 +1,3 @@
-import { useState } from "react";
 import "./App.css";
 import { UserContextProvier } from "./context/UserContext";
 import { Routes, Route } from "react-router-dom";
@@ -11,8 +10,6 @@ import PostPage from "./pages/PostPage";
 import EditPage from "./pages/EditPage";
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
     <UserContextProvier>
       <Routes>
@@ -22,6 +19,7 @@ function App() {
           <Route path="register" element={<RegisterPage />} />
           <Route path="create" element={<CreatPage />} />
           <Route path="post/:id" element={<PostPage />} />
+          <Route path="edit" element={<EditPage />} />
           <Route path="edit/:id" element={<EditPage />} />
         </Route>
       </Routes>

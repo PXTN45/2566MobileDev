@@ -1,36 +1,111 @@
-import React from "react";
 import { Link } from "react-router-dom";
+import { useState, useContext, useEffect } from "react";
+import { UserContext } from "../context/UserContext";
+import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+const baseURL = import.meta.env.VITE_BASE_URL;
 
 const PostPage = () => {
+  const navigate = useNavigate();
+  const [postInfo, setPostInfo] = useState(null);
+  const { userInfo } = useContext(UserContext);
+  const [cancel, setCancel] = useState(false);
+  const { id } = useParams();
+
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`${baseURL}/post/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        console.log("Post deleted successfully!");
+        navigate("/");
+      } else {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetch(`${baseURL}/post/${id}`).then((response) => {
+      response.json().then((postInfo) => {
+        setPostInfo(postInfo);
+      });
+    });
+  }, [id]);
+  if (!postInfo) return " ";
   return (
     <div className="post-page">
-        <h1>
-          {" "}
-          เหล่านักบรรพชีวินวิทยาต่างสงสัยมานานหลายสิบปี
-          ว่าทำไมวิวัฒนาการจึงเลือกให้ ทีเร็กซ์ มีแขนที่สั้นเช่นนี้
-          ทั้งที่ความยาวทั้งตัว 45 ฟุตอาจมีกะโหลกศีรษะยาว 5 ฟุต
-          แต่กับมีแขนที่ยาวเพียง 3 ฟุตเท่านั้น ซึ่งเทียบเท่ากับคนสูง 6
-          ฟุตที่มีแขน 5 นิ้ว แขนของมันเป็นหัวข้อที่น่าสนใจอย่างยิ่ง
-          เนื่องจากมีขนาดเล็กเกินไปที่จะเป็นส่วนหนึ่งของโครงกระดูก
-        </h1>
-        <time>25 เมษายน 2022</time>
-        <div className="author"> @ by Nutthphong </div>
-        <div className="image">
-        <Link>
-          <img
-            src="https://blog.eduhub.tv/wp-content/uploads/2022/04/APR1115_EP384-%E0%B8%97%E0%B8%B3%E0%B9%84%E0%B8%A1%E0%B8%97%E0%B8%B5%E0%B9%80%E0%B8%A3%E0%B9%87%E0%B8%81%E0%B8%8B%E0%B9%8C%E0%B8%96%E0%B8%B6%E0%B8%87%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B9%80%E0%B8%A5%E0%B9%87%E0%B8%81_%E0%B9%81%E0%B8%99%E0%B8%A7%E0%B8%99%E0%B8%AD%E0%B8%99.jpg"
-            alt=""
+      <h1>{postInfo.title}</h1>
+      <time>{format(new Date(postInfo.createdAt), "dd MMMM yyyy HH:MM")}</time>
+      <div className="author"> @ by {postInfo.author.username} </div>
+      {userInfo?.id === postInfo.author._id && (
+        <div className="edit-row">
+          <Link className="edit-btn" to={`/edit/${postInfo._id}`}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-6 h-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+              />
+            </svg>
+            Edit
+          </Link>
+          <Link
+        className="delete-btn"
+        to="#"
+        onClick={() => setCancel(true)}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="w-6 h-6"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 18L18 6M6 6l12 12"
           />
+        </svg>
+        Delete This post
+      </Link>
+      {cancel && (
+
+        <div className="delete-confirmation">
+          <p>Are you sure? </p>
+          <button onClick={() => handleDelete()}>Yes, Delete</button>
+          <button onClick={() => setCancel(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
+        </div>
+      )}
+      <div className="image">
+        <Link>
+          <img src={`${baseURL}/${postInfo.cover}`} alt="" />
         </Link>
       </div>
-      <p className="summary">
-          เหล่านักบรรพชีวินวิทยาต่างสงสัยมานานหลายสิบปี
-          ว่าทำไมวิวัฒนาการจึงเลือกให้ ทีเร็กซ์ มีแขนที่สั้นเช่นนี้
-          ทั้งที่ความยาวทั้งตัว 45 ฟุตอาจมีกะโหลกศีรษะยาว 5 ฟุต
-          แต่กับมีแขนที่ยาวเพียง 3 ฟุตเท่านั้น ซึ่งเทียบเท่ากับคนสูง 6
-          ฟุตที่มีแขน 5 นิ้ว แขนของมันเป็นหัวข้อที่น่าสนใจอย่างยิ่ง
-          เนื่องจากมีขนาดเล็กเกินไปที่จะเป็นส่วนหนึ่งของโครงกระดูก
-        </p>
+      <p
+        className="content"
+        dangerouslySetInnerHTML={{ __html: postInfo.content }}
+      ></p>
+     
     </div>
   );
 };
