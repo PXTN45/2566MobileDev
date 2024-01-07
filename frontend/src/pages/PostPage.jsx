@@ -38,7 +38,9 @@ const PostPage = () => {
       });
     });
   }, [id]);
+
   if (!postInfo) return " ";
+  
   return (
     <div className="post-page">
       <h1>{postInfo.title}</h1>
